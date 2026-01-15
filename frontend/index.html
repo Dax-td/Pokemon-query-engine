@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pokémon List</title>
+    <link rel="stylesheet" type="text/css" href="/static/style.css">
+</head>
+<body>
+    <h1>Pokédex</h1>
+    
+    <div class="controls">
+        <label for="sort-select">Sort by:</label>
+        <select id="sort-select">
+            <option value="id">Pokédex Number</option>
+            <option value="height">Highest Height</option>
+            <option value="weight">Highest Weight</option>
+            <option value="total_stats">Highest Total Stats</option>
+            <option value="total_stats_low">Lowest Total Stats</option>
+            <option value="hp">Highest HP</option>
+            <option value="hp_low">Lowest HP</option>
+            <option value="attack">Highest Attack</option>
+            <option value="attack_low">Lowest Attack</option>
+            <option value="defense">Highest Defense</option>
+            <option value="defense_low">Lowest Defense</option>
+            <option value="special-attack">Highest Special Attack</option>
+            <option value="special-attack_low">Lowest Special Attack</option>
+            <option value="special-defense">Highest Special Defense</option>
+            <option value="special-defense_low">Lowest Special Defense</option>
+            <option value="speed">Highest Speed</option>
+            <option value="speed_low">Lowest Speed</option>
+        </select>
+        <span id="result-count"></span>
+        <p class="hint">Click on a card to show/hide stats</p>
+    </div>
+    
+    <div id="pokemon-grid"></div>
+
+    <script>
+        let expandedCard = null;
+        
+        function loadPokemon(sortBy = 'id') {
+            fetch(`/pokemon?sort_by=${sortBy}&limit=100`)
+                .then(res => res.json())
+                .then(data => {
+                    const grid = document.getElementById('pokemon-grid');
+                    grid.innerHTML = '';
+                    expandedCard = null;
+                    
+                    document.getElementById('result-count').textContent = `Showing ${data.length} Pokémon`;
+                    
+                    data.forEach(p => {
+                        const card = document.createElement('div');
+                        card.className = 'pokemon-card';
+                        
+                        const img = document.createElement('img');
+                        img.src = p.animated_image || p.image;
+                        img.alt = p.name;
+                        
+                        const pokedexNum = document.createElement('span');
+                        pokedexNum.className = 'pokedex-number';
+                        pokedexNum.textContent = `#${p.pokedex_number || p.id}`;
+                        
+                        const name = document.createElement('h3');
+                        name.textContent = p.name.charAt(0).toUpperCase() + p.name.slice(1);
+                        
+                        const details = document.createElement('div');
+                        details.className = 'details';
+                        details.innerHTML = `
+                            <p><strong>Height:</strong> ${p.height / 10} m</p>
+                            <p><strong>Weight:</strong> ${p.weight / 10} kg</p>
+                        `;
+                        
+                        const statsDiv = document.createElement('div');
+                        statsDiv.className = 'stats hidden';
+                        
+                        const stats = p.parsed_stats;
+                        statsDiv.innerHTML = `
+                            <div class="stat-row">
+                                <span class="stat-name">HP:</span>
+                                <span class="stat-value">${stats.hp}</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-name">Attack:</span>
+                                <span class="stat-value">${stats.attack}</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-name">Defense:</span>
+                                <span class="stat-value">${stats.defense}</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-name">Sp. Atk:</span>
+                                <span class="stat-value">${stats['special-attack']}</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-name">Sp. Def:</span>
+                                <span class="stat-value">${stats['special-defense']}</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-name">Speed:</span>
+                                <span class="stat-value">${stats.speed}</span>
+                            </div>
+                            <div class="stat-row total">
+                                <span class="stat-name">Total:</span>
+                                <span class="stat-value">${p.total_stats}</span>
+                            </div>
+                        `;
+                        
+                        // Click handler - only one card expanded at a time
+                        card.addEventListener('click', () => {
+                            // If this card is already expanded, close it
+                            if (expandedCard === card) {
+                                statsDiv.classList.add('hidden');
+                                card.classList.remove('expanded');
+                                expandedCard = null;
+                            } else {
+                                // Close previously expanded card
+                                if (expandedCard) {
+                                    const prevStats = expandedCard.querySelector('.stats');
+                                    prevStats.classList.add('hidden');
+                                    expandedCard.classList.remove('expanded');
+                                }
+                                // Open this card
+                                statsDiv.classList.remove('hidden');
+                                card.classList.add('expanded');
+                                expandedCard = card;
+                            }
+                        });
+                        
+                        card.appendChild(pokedexNum);
+                        card.appendChild(img);
+                        card.appendChild(name);
+                        card.appendChild(details);
+                        card.appendChild(statsDiv);
+                        grid.appendChild(card);
+                    });
+                })
+                .catch(err => console.error(err));
+        }
+        
+        // Initial load
+        loadPokemon();
+        
+        // Add event listener for sort changes
+        document.getElementById('sort-select').addEventListener('change', (e) => {
+            loadPokemon(e.target.value);
+        });
+    </script>
+</body>
+</html>
