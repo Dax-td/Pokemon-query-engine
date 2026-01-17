@@ -21,7 +21,7 @@ app.add_middleware(
 engine = create_engine("postgresql://postgres:Trishaal1$@localhost/pokemon_db", echo=True)
 
 @app.get("/pokemon")
-def get_pokemon(sort_by: str = "id", limit: int = 100):
+def get_pokemon(sort_by: str = "id", limit: int = Query(100, ge=0)):
     # Parse and calculate stats for each Pokemon
     with engine.connect() as conn:
         result = conn.execute(text("SELECT id, pokedex_number, name, weight, height, image, animated_image, stats FROM pokemon"))
@@ -62,8 +62,10 @@ def get_pokemon(sort_by: str = "id", limit: int = 100):
             # Default sort by id
             pokemon_list.sort(key=lambda x: x['id'])
         
-        # Limit results
-        return pokemon_list[:limit]
+        # Limit results (limit=0 means return all)
+        if limit:
+            return pokemon_list[:limit]
+        return pokemon_list
 
 # Path to frontend folder
 frontend_path = Path(__file__).parent.parent / "frontend"
